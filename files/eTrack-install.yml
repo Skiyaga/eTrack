@@ -1,0 +1,23 @@
+name: eTrack
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - abricate
+  - fastqc
+  - multiqc
+  - snippy=4.3.6
+  - prokka
+  - prodigal
+  - freebayes
+  - unicycler
+  - mlst
+  - bwa
+  - gatk4
+  - quast
+  - r-base
+  - trimmomatic
+  - parallel
+  - iqtree
+  - samtools

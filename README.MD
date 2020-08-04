@@ -19,6 +19,13 @@ The pipeline is able to perform the following:
 7. Phylogenetic inferences
 8. `.html` report generation
 
-## Instalation
+## Instalation    
+1. Download and install conda either using [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [anaconda](https://docs.anaconda.com/) for your OS type
+2. Run the following installation commands:
+   ```conda env create -n eTrack-1.0 --file eTrack-install.yml python=3.6```
+3. When installation is successful, run:
+   `conda activate eTrack-1.0`
+4. List all the installed packages by running:
+   `conda --list`
 
 
