@@ -64,7 +64,7 @@ SYPNOSIS:
     An E.coli analysis Pipeline for Profiling epidemiology, virulence, phylogeny & resistome
 
 USAGE:
-    eTrack [options] --input --output --reference
+    eTrack [options] --input <INPUT> --output <OUTPUT> --reference <REF.fasta>
 
 GENERAL:
     -h/--help       Display this help and exit
