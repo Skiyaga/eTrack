@@ -1,18 +1,210 @@
 #! /bin/bash
 # set -eu
 
-## 0.SOFTWARE MENU------------------------------------------ ##########
+eTrack=$0
+cd
+while [ -h "$eTrack" ]; do
+    eTrackDIR="$(cd -P "$(dirname "$0")" && pwd)"
+    eTrack="$(readlink "$eTrack")"
+    [[ $eTrack != /* ]] && eTrack="eTrackDIR/$eTrack"
+done
+eTrackDIR="$(cd -P "$(dirname "$eTrack")" && pwd)"
 
-## 1. QUALITY CONTROL AND TRIMMING METHODS
+### Variables ####
+OUTWD=
+INDIR=
+CPUS=4
+REFERENCE=
+VERSION="1.0"
+eTrack=$0
+ARGPARSED0=$0
+ALLARGSPARSED=$@
 
-## 2. ASSEMBLY, SCAFFOLDING, ANNOTATION
+usage() {
+    cat <<EOF
+Thanks for using eTrack $VERSION
+Developed by as a mini-project by Group-4 EanBIT Residential Training 2
 
-## 3. VARIANT CALLING
+SYPNOSIS:
+    An E.coli analysis Pipeline for Profiling it's epidemiology, virulence, phylogeny & resistome
 
-## 4. AMR, VIRULENCE FACTORS, MLST AND PLASMIDS DETECTION
+USAGE:
+    eTrack [options] --input --output --reference
 
-## 5. PANGENOME ANALYSIS
+GENERAL:
+    -h/--help       Display this help and exit
+    -c/--citation   Show citation and exit
+    -v/--version    Print version and exit
 
-## 6. PHYLOGENETICS
+MANDATORY OPTIONS:
+    -i/--input      Path to the raw sequencces to be analyzed
+    -o/--output     Name of ouput directory
+    -r/--reference  Path to the reference genome(.fasta, .gb) [default="REF.fasta"]
 
-## REPORTING
+OTHER OPTIONS:
+    -t/--threads    Number of cores to use <integer> [default=$CPUS]
+EOF
+}
+if [ $# == 0 ]; then
+    usage
+    exit 1
+fi
+#########  OPTIONS  ############
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+    ARGS="$1"
+    case $ARGS in
+    -i | --input)
+        if [ "$2" ]; then
+            INDIR=$2
+            shift 2
+        fi
+        ;;
+    -o | --output)
+        if [ "$2" ]; then
+            OUTWD=$2
+            shift 2
+        fi
+        ;;
+    -r | --reference)
+        if [ "$2" ]; then
+            REFERENCE=$2
+            shift 2
+        fi
+        ;;
+    -t | --threads)
+        if [ "$2" -eq "$2" ] 2>/dev/null; then
+            CPUS=$2
+            shift 2
+        else
+            echo -e 'ERROR: "-t/--threads" requires a numeric argument\n'
+            echo -e "Selected cores: $2\n"
+            exit 1
+        fi
+        ;;
+    -h | --help)
+        usage
+        exit 1
+        ;;
+    -v | --version)
+        echo "This is eTrack version $VERSION"
+        exit 1
+        ;;
+    -c | --citation)
+        echo -e "If using eTrack, please cite:"
+        echo -e "https://github.com/GunzIvan28/eTrack"
+        exit 1
+        ;;
+    *)
+        echo -e "\nERROR: unknown option: $1 \n"
+        usage
+        exit 1
+        ;;
+    esac
+done
+set -- "${POSITIONAL[@]}"
+
+###----------------------------Creating work directories
+mkdir -p $OUTWD/{fastqc_files,annotation,mlsts,assembly,resistome,quality_assembly,reports,phylogenetics,snps}
+ls $INDIR >$OUTWD/temp.txt
+cat $OUTWD/temp.txt | cut -d. -f1 | rev | cut -c7- | rev | uniq >$OUTWD/list.txt
+rm -rf $OUTWD/temp.txt
+
+## 1. QUALITY ASSESSMENT ##
+gzip $INDIR/*.fastq
+fastqc $INDIR/*.gz --outdir $OUTWD/fastqc_files
+cd $OUTWD/fastqc_files
+multiqc . --force --outdir .
+rm -rf *.zip
+echo -e "Quality assessment successfully completed"
+cd
+
+## 2. ASSEMBLY
+for sample in $(cat $OUTWD/list.txt); do
+    mkdir -p $OUTWD/assembly/${sample}
+    X=${sample}_trim1.fastq.gz
+    Y=${sample}_trim2.fastq.gz
+    unicycler -1 $INDIR/$X -2 $INDIR/$Y -t $CPUS -o $OUTWD/assembly/${sample}
+    mv $OUTWD/assembly/${sample}/assembly.fasta $OUTWD/assembly/${sample}/${sample}.fasta
+done
+echo -e "Assembly successfully completed"
+
+## 3. ASSEMBLY QUALITY ASSESSMENT
+for n in $(cat $OUTWD/list.txt); do
+    quast $OUTWD/assembly/${n}/${n}.fasta -o $OUTWD/quality_assembly/${n}_stats -t $CPUS --min-contig 200 --silent
+done
+echo -e "Quality stats for assembly completed"
+
+## 4. ANNOTATION
+for x in $(cat $OUTWD/list.txt); do
+    mkdir -p $OUTWD/assembly/${x}
+    prokka --outdir $OUTWD/annotation/${x} --prefix ${x} $OUTWD/assembly/${x}/$x.fasta --cpus $CPUS --locustag $x
+done
+echo -e "Quality stats for assembly completed"
+
+## 5. AMR,PLASMIDS,VIRULENCE
+### amr
+abricate --setupdb
+for sample in $(cat $OUTWD/list.txt); do
+    mkdir -p $OUTWD/resistome/ABRICATE/${sample}
+    for i in resfinder card argannot ncbi; do
+        abricate $OUTWD/assembly/${sample}/${sample}.fasta --threads 8 --nopath --db $i >$OUTWD/resistome/ABRICATE/${sample}/$sample_$i.tab
+        abricate --summary $OUTWD/resistome/ABRICATE/${sample}/*.tab >$OUTWD/resistome/ABRICATE/${sample}/summary.tab
+    done
+done
+### plasmids and virulence factors
+mkdir -p $OUTWD/resistome/virulence_factors
+for sample in $(cat $OUTWD/list.txt); do
+    abricate $OUTWD/assembly/${sample}/${sample}.fasta --threads 8 --nopath --db vfdb >$OUTWD/resistome/virulence_factors/$sample.tab
+done
+abricate --summary $OUTWD/resistome/virulence_factors/*.tab >$OUTWD/resistome/virulence_factors/summary-vf.tab
+### ----------------------------------------------------------------------------------------------------------------
+mkdir -p $OUTWD/resistome/plasmids
+for sample in $(cat $OUTWD/list.txt); do
+    abricate $OUTWD/assembly/${sample}/${sample}.fasta --threads 8 --nopath --db plasmidfinder >$OUTWD/resistome/plasmids/$sample.tab
+done
+abricate --summary $OUTWD/resistome/plasmids/*.tab >$OUTWD/resistome/plasmids/summary-plasmids.tab
+
+### 6. MLSTS
+mkdir -p $OUTWD/mlsts
+for w in $(cat $OUTWD/list.txt); do
+    mlst --threads $CPUS $OUTWD/assembly/${w}/${w}.fasta >$OUTWD/mlsts/${w}_mlst.tsv
+done
+cat $OUTWD/mlsts/*.tsv >$OUTWD/mlsts/summary-mlst.tsv
+
+## 7. VARIANT CALLING
+mkdir -p $OUTWD/snps
+for c in $(cat $OUTWD/list.txt); do
+    mkdir -p $OUTWD/snps/${c}
+    X=${c}_trim1.fastq.gz
+    Y=${c}_trim2.fastq.gz
+    snippy --cpus $CPUS --outdir $OUTWD/snps/${c} --ref $REFERENCE --R1 $INDIR/$X --R2 $INDIR/$Y --force
+done
+
+## 8. PANGENOME ANALYSIS
+SVG_CONVERT="$eTrackDIR/../files/roary2svg.pl"
+CAIRO_SVG="$(which cairosvg)"
+mkdir -p $OUTWD/gff
+for c in $(cat $OUTWD/list.txt); do
+    cp -rf $OUTWD/annotation/${c}/${c}.gff $OUTWD/gff
+done
+roary -e -n -f $OUTWD/pangenome -p $CPUS $OUTWD/gff/*.gff
+perl $SVG_CONVERT $OUTWD/pangenome/gene_presence_absence.csv --colour=Blue >$OUTWD/pangenome/pangenome.svg
+$CAIRO_SVG $OUTWD/pangenome/pangenome.svg -o $OUTWD/pangenome/pangenome.png
+rm -rf $OUTWD/gff
+
+## 9. PHYLOGENETICS
+
+for i in $(cat $OUTWD/list.txt); do cp $OUTWD/assembly/${i}/${i}.fasta phylogenetics/; done
+cd phylogenetics/
+for i in *.fasta; do awk '/^>/ {gsub(/.fa(sta)?$/,"",FILENAME);printf(">%s\n",FILENAME);next;} {print}' $i > $i.adjusted; awk 'BEGIN{FS=OFS=">"}NF>1{$3="_sequence_"++i}1' $i.adjusted > $i.changed; done
+cat *.changed > EC.fasta
+rm *.adjusted *.changed
+##clustalw -align -type=dna -infile=EC.fasta
+mafft --auto EC.fasta > EC.fasta
+iqtree -s EC.aln 
+cd ..
+
+# ## REPORTING----- SHINNY APP
+# else
+#     echo "Wrong reference provided, please check!!\nProvide either a '.fasta' or '.gbk'"
