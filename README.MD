@@ -49,7 +49,7 @@ The pipeline is able to perform the following:
 4. List all the installed packages by running:
    `conda list`  
    `bash setup.sh`  
-   `cd .. && bash cleanup.sh`  
+   `cd .. && bash clean.sh`  
 5. Run the command below to display the programs menu  
    `eTrack -h`  
 
