@@ -18,6 +18,7 @@ dependencies:
   - r-base=4.0.2
   - parallel=20200722
   - iqtree=2.0.3
+  - fasttree=2.1.10
   - samtools=1.9
   - cairosvg=2.4.2
   - roary=3.13.0
@@ -28,5 +29,6 @@ dependencies:
   - r-ggplot2
   - r-dplyr
   - mafft=7.407
-  - raxml
+  - raxml=8.2.12
   - muscle=3.8.31
+  - parsnp=1.5.3

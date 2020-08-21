@@ -194,16 +194,18 @@ $CAIRO_SVG $OUTWD/pangenome/pangenome.svg -o $OUTWD/pangenome/pangenome.png
 rm -rf $OUTWD/gff
 
 ## 9. PHYLOGENETICS
+for i in $(cat $OUTWD/list.txt); do cp $OUTWD/assembly/${i}/${i}.fasta $OUTWD/phylogenetics/; done
+parsnp -r $REFERENCE -d $OUTWD/phylogenetics/ -p $CPUS -c --use-ani -n mafft -u -o $OUTWD/phylogenetics/Phylogenetic_Tree/
+rm $OUTWD/phylogenetics/*.fasta
 
-for i in $(cat $OUTWD/list.txt); do cp $OUTWD/assembly/${i}/${i}.fasta phylogenetics/; done
-cd phylogenetics/
-for i in *.fasta; do awk '/^>/ {gsub(/.fa(sta)?$/,"",FILENAME);printf(">%s\n",FILENAME);next;} {print}' $i > $i.adjusted; awk 'BEGIN{FS=OFS=">"}NF>1{$3="_sequence_"++i}1' $i.adjusted > $i.changed; done
-cat *.changed > EC.fasta
-rm *.adjusted *.changed
-##clustalw -align -type=dna -infile=EC.fasta
-mafft --auto EC.fasta > EC.fasta
-iqtree -s EC.aln 
-cd ..
+#The code below is in case there is a need to do whole genome alignment and phylogenetics
+#cd $OUTWD/phylogenetics/
+#for i in *.fasta; do awk '/^>/ {gsub(/.fa(sta)?$/,"",FILENAME);printf(">%s\n",FILENAME);next;} {print}' $i > $i.adjusted; awk 'BEGIN{FS=OFS=">"}NF>1{$3="_sequence_"++i}1' $i.adjusted > $i.changed; done
+#cat *.changed > EC.fasta
+#rm *.adjusted *.changed
+#mafft --auto EC.fasta > EC.fasta
+#iqtree -s EC.aln 
+#cd ..
 
 # ## REPORTING----- SHINNY APP
 # else
