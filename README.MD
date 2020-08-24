@@ -1,4 +1,4 @@
-# Tracing Origins and Transmission Dynamics of Antimicrobial Resistance in E. Coli Whole Genome Sequence data
+# Tracing Origins and Transmission Dynamics of Antimicrobial Resistance in *Escherichia coli* isolates in a Pastoralist Community using Whole Genome Sequences data
 
 ## Introduction
 
@@ -16,7 +16,7 @@ The overwhelming generation of sequencing data has led to the evolution of presc
 
 ## Samples
 
-42 E. coli bacterial isolates from multidrug resistant bacteria isolated from stool samples from both humans and cattle in pastoralist communities were sequenced on Illumina Miseq with an output of 2 x 200bp.
+42 *E. coli* bacterial isolates from multidrug resistant bacteria isolated from stool samples from both humans and cattle in pastoralist communities were sequenced on Illumina Miseq with an output of 2 x 200bp.
 
 ## Sypnosis
 
