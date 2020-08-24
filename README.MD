@@ -24,7 +24,7 @@ As a response to the collective call to arms against the pandemic Antimicrobial 
 
 ## eTrack
 
-An analysis pipeline designed to understand and determine the molecular epidemiology, antimicrobial resistance patterns and mechanisms through which E.coli is able to survive within its' diverse environments from Whole Genome Sequence Illumina reads  
+An analysis pipeline designed to understand and determine the molecular epidemiology, antimicrobial resistance patterns and mechanisms through which *E.coli* is able to survive within its' diverse environments from Whole Genome Sequence Illumina reads  
 
 The pipeline is able to perform the following:
 
