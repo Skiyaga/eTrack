@@ -83,3 +83,6 @@ OTHER OPTIONS:
 ## Code snippets  
 
 `eTrack --input <INPUT> --output <OUTPUT> --reference <REF.fasta> --threads 8`  
+
+## Report
+Access the summary report for the analysis via [Report](https://gunzivan28.github.io/eTrack/)
